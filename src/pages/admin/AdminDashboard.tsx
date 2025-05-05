@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Component, ErrorInfo } from "react";
+import React, { useEffect, useState, useCallback, Component, ErrorInfo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -82,16 +82,17 @@ const createUserSchema = Yup.object().shape({
 // Error Boundary Component
 interface ErrorBoundaryState {
   hasError: boolean;
+  errorMessage: string | null;
 }
 
 class AdminDashboardErrorBoundary extends Component<
   { children: React.ReactNode },
   ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false, errorMessage: null };
 
-  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, errorMessage: error.message };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -106,8 +107,15 @@ class AdminDashboardErrorBoundary extends Component<
             Something went wrong
           </h2>
           <p className="text-gray-600 mt-2">
-            Please try refreshing the page or contact support.
+            {this.state.errorMessage || "Please try refreshing the page or contact support."}
           </p>
+          <button
+            type="button"
+            onClick={() => this.setState({ hasError: false, errorMessage: null })}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/80"
+          >
+            Try Again
+          </button>
         </div>
       );
     }
@@ -147,7 +155,11 @@ const AdminDashboard: React.FC = () => {
         console.error("Fetch users error:", err);
         setUsers([]);
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch users";
+          err instanceof Error
+            ? err.message.includes("Unauthorized")
+              ? "Session expired. Please log in again."
+              : err.message
+            : "Failed to fetch users";
         dispatch(setError(errorMessage));
       } finally {
         setLoading(false);
@@ -157,102 +169,145 @@ const AdminDashboard: React.FC = () => {
   }, [dispatch, accessToken]);
 
   // Handle user deletion
-  const handleDelete = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
-    setLoading(true);
-    try {
-      await apiService.delete(`/users/${userId}`);
-      setUsers(users.filter((user) => user._id !== userId));
-      setSuccessMessage("User deleted successfully");
-      dispatch(clearError());
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: unknown) {
-      console.error("Delete user error:", err);
-      dispatch(setError("Failed to delete user"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDelete = useCallback(
+    async (userId: string) => {
+      console.log("Delete button clicked for userId:", userId);
+      if (!window.confirm("Are you sure you want to delete this user?")) return;
+      setLoading(true);
+      try {
+        await apiService.delete(`/users/${userId}`);
+        setUsers(users.filter((user) => user._id !== userId));
+        setSuccessMessage("User deleted successfully");
+        dispatch(clearError());
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (err: unknown) {
+        console.error("Delete user error:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message.includes("Unauthorized")
+              ? "Session expired. Please log in again."
+              : err.message
+            : "Failed to delete user";
+        dispatch(setError(errorMessage));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [users, dispatch]
+  );
 
   // Handle user update
-  const handleUpdate = async (values: UpdateUserFormValues) => {
-    if (!selectedUser) return;
-    setLoading(true);
-    try {
-      const payload = {
-        email: values.email,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        role: values.role,
-        profilePicture: values.profilePicture || undefined,
-        isActive: values.isActive,
-        emailVerified: values.emailVerified,
-        ...(values.password && { password: values.password }),
-      };
-      console.log("Updating user with _id:", selectedUser._id);
-      console.log("Update payload:", payload);
-      const response = await apiService.patch<User>(
-        `/users/${selectedUser._id}`,
-        payload
-      );
-      console.log("Update response:", response);
-      setUsers(
-        users.map((user) =>
-          user._id === selectedUser._id ? response.data : user
-        )
-      );
-      setIsUpdateModalOpen(false);
-      setSelectedUser(null);
-      setSuccessMessage("User updated successfully");
-      dispatch(clearError());
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: unknown) {
-      console.error("Update user error:", err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message.includes("404")
-            ? `User with ID ${selectedUser._id} not found`
-            : err.message
-          : "Failed to update user";
-      dispatch(setError(errorMessage));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleUpdate = useCallback(
+    async (values: UpdateUserFormValues) => {
+      if (!selectedUser) return;
+      console.log("Update form submitted for userId:", selectedUser._id);
+      setLoading(true);
+      try {
+        const payload = {
+          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: values.role,
+          profilePicture: values.profilePicture || undefined,
+          isActive: values.isActive,
+          emailVerified: values.emailVerified,
+          ...(values.password && { password: values.password }),
+        };
+        console.log("Update payload:", payload);
+        const response = await apiService.patch<User>(
+          `/users/${selectedUser._id}`,
+          payload
+        );
+        console.log("Update response:", response);
+        setUsers(
+          users.map((user) =>
+            user._id === selectedUser._id ? response.data : user
+          )
+        );
+        setIsUpdateModalOpen(false);
+        setSelectedUser(null);
+        setSuccessMessage("User updated successfully");
+        dispatch(clearError());
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (err: unknown) {
+        console.error("Update user error:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message.includes("404")
+              ? `User with ID ${selectedUser._id} not found`
+              : err.message.includes("Unauthorized")
+              ? "Session expired. Please log in again."
+              : err.message
+            : "Failed to update user";
+        dispatch(setError(errorMessage));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedUser, users, dispatch]
+  );
 
   // Handle user creation
-  const handleCreate = async (values: CreateUserFormValues) => {
-    setLoading(true);
-    try {
-      const payload = {
-        email: values.email,
-        password: values.password,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        role: values.role,
-      };
-      console.log("Creating user with payload:", payload);
-      const response = await apiService.post<User>("/users", payload);
-      console.log("Create response:", response);
-      setUsers([...users, response.data]);
-      setIsCreateModalOpen(false);
-      setSuccessMessage(`${values.role.charAt(0).toUpperCase() + values.role.slice(1)} created successfully`);
-      dispatch(clearError());
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: unknown) {
-      console.error("Create user error:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create user";
-      dispatch(setError(errorMessage));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleCreate = useCallback(
+    async (values: CreateUserFormValues) => {
+      console.log("Create form submitted with values:", values);
+      setLoading(true);
+      try {
+        const payload = {
+          email: values.email,
+          password: values.password,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: values.role,
+        };
+        console.log("Creating user with payload:", payload);
+        const response = await apiService.post<User>("/users", payload);
+        console.log("Create response:", response);
+        setUsers([...users, response.data]);
+        setIsCreateModalOpen(false);
+        setSuccessMessage(`${values.role.charAt(0).toUpperCase() + values.role.slice(1)} created successfully`);
+        dispatch(clearError());
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (err: unknown) {
+        console.error("Create user error:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message.includes("Unauthorized")
+              ? "Session expired. Please log in again."
+              : err.message
+            : "Failed to create user";
+        dispatch(setError(errorMessage));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [users, dispatch]
+  );
 
   // Handle modal close
-  const handleCloseCreateModal = () => {
+  const handleCloseCreateModal = useCallback(() => {
+    console.log("Closing create modal");
     setIsCreateModalOpen(false);
-  };
+  }, []);
+
+  const handleCloseUpdateModal = useCallback(() => {
+    console.log("Closing update modal");
+    setIsUpdateModalOpen(false);
+    setSelectedUser(null);
+  }, []);
+
+  // Handle add user button click
+  const handleAddUserClick = useCallback(() => {
+    console.log("Add User button clicked");
+    setIsCreateModalOpen(true);
+  }, []);
+
+  // Handle edit button click
+  const handleEditClick = useCallback((user: User) => {
+    console.log("Edit button clicked for userId:", user._id);
+    setSelectedUser(user);
+    setIsUpdateModalOpen(true);
+  }, []);
 
   return (
     <AdminDashboardErrorBoundary>
@@ -282,8 +337,9 @@ const AdminDashboard: React.FC = () => {
         {/* Add User Button */}
         <div className="mb-6">
           <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="btn-primary flex items-center"
+            type="button"
+            onClick={handleAddUserClick}
+            className="btn-primary flex items-center disabled:opacity-70 disabled:cursor-not-allowed"
             disabled={loading}
           >
             <Plus size={18} className="mr-2" />
@@ -352,18 +408,17 @@ const AdminDashboard: React.FC = () => {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setIsUpdateModalOpen(true);
-                        }}
-                        className="text-primary hover:text-primary/80 mr-4"
+                        type="button"
+                        onClick={() => handleEditClick(user)}
+                        className="text-primary hover:text-primary/80 mr-4 disabled:opacity-70 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
                         <Pencil size={18} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(user._id)}
-                        className="text-error hover:text-error/80"
+                        className="text-error hover:text-error/80 disabled:opacity-70 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
                         <Trash2 size={18} />
@@ -378,12 +433,19 @@ const AdminDashboard: React.FC = () => {
 
         {/* Update User Modal */}
         {isUpdateModalOpen && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            onClick={handleCloseUpdateModal}
+          >
+            <div
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Update User</h2>
                 <button
-                  onClick={() => setIsUpdateModalOpen(false)}
+                  type="button"
+                  onClick={handleCloseUpdateModal}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X size={24} />
@@ -538,8 +600,8 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex justify-end space-x-2">
                       <button
                         type="button"
-                        onClick={() => setIsUpdateModalOpen(false)}
-                        className="btn-secondary"
+                        onClick={handleCloseUpdateModal}
+                        className="btn-secondary disabled:opacity-70 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
                         Cancel
@@ -565,11 +627,18 @@ const AdminDashboard: React.FC = () => {
 
         {/* Create User Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            onClick={handleCloseCreateModal}
+          >
+            <div
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Add User</h2>
                 <button
+                  type="button"
                   onClick={handleCloseCreateModal}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -685,7 +754,7 @@ const AdminDashboard: React.FC = () => {
                           resetForm();
                           handleCloseCreateModal();
                         }}
-                        className="btn-secondary"
+                        className="btn-secondary disabled:opacity-70 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
                         Cancel

@@ -26,6 +26,7 @@ import { checkAuth } from "./store/slices/authSlice";
 // Route guards
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
+import Dashboard from "./pages/doctor/Dashboard";
 
 const App = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -120,6 +121,17 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+           <Route
+            path="/doctor/profile"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                requiredRole="doctor"
+              >
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/doctor/patients"
             element={
@@ -139,17 +151,6 @@ const App = () => {
                 requiredRole="doctor"
               >
                 <div>Patient Details (Placeholder)</div>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/doctor/consultations"
-            element={
-              <ProtectedRoute
-                isAuthenticated={isAuthenticated}
-                requiredRole="doctor"
-              >
-                <div>Consultations (Placeholder)</div>
               </ProtectedRoute>
             }
           />

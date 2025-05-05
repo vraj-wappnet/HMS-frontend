@@ -286,25 +286,21 @@ const AdminDashboard: React.FC = () => {
 
   // Handle modal close
   const handleCloseCreateModal = useCallback(() => {
-    console.log("Closing create modal");
     setIsCreateModalOpen(false);
   }, []);
 
   const handleCloseUpdateModal = useCallback(() => {
-    console.log("Closing update modal");
     setIsUpdateModalOpen(false);
     setSelectedUser(null);
   }, []);
 
   // Handle add user button click
   const handleAddUserClick = useCallback(() => {
-    console.log("Add User button clicked");
     setIsCreateModalOpen(true);
   }, []);
 
   // Handle edit button click
   const handleEditClick = useCallback((user: User) => {
-    console.log("Edit button clicked for userId:", user._id);
     setSelectedUser(user);
     setIsUpdateModalOpen(true);
   }, []);

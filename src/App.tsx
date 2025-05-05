@@ -95,7 +95,6 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-      
 
           {/* Doctor routes */}
           <Route
@@ -109,7 +108,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="/doctor/profile"
             element={
               <ProtectedRoute
@@ -188,28 +187,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/patient/medical-history"
-            element={
-              <ProtectedRoute
-                isAuthenticated={isAuthenticated}
-                requiredRole="patient"
-              >
-                <div>Medical History (Placeholder)</div>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/patient/health-data"
-            element={
-              <ProtectedRoute
-                isAuthenticated={isAuthenticated}
-                requiredRole="patient"
-              >
-                <div>Health Data (Placeholder)</div>
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/patient/chatbot"
             element={

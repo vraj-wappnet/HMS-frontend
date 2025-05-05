@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Calendar, FileText, Clock, MessageCircle, Bell, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { Calendar, FileText, Clock, MessageCircle, Bell, ChevronRight} from 'lucide-react';
 import { RootState, AppDispatch } from '../../store';
 import { fetchAppointments } from '../../store/slices/appointmentSlice';
 import { fetchRealtimeHealthData } from '../../store/slices/healthDataSlice';
-import HealthDataCard from '../../components/patient/HealthDataCard';
 import UpcomingAppointments from '../../components/patient/UpcomingAppointments';
 import { format } from 'date-fns';
 
@@ -13,7 +12,7 @@ const PatientDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { appointments, loading: appointmentsLoading } = useSelector((state: RootState) => state.appointments);
-  const { realtimeData, abnormalReadings, loading: healthDataLoading } = useSelector((state: RootState) => state.healthData);
+  const {  abnormalReadings, loading: healthDataLoading } = useSelector((state: RootState) => state.healthData);
 
   useEffect(() => {
     if (user?.id) {
@@ -116,51 +115,6 @@ const PatientDashboard: React.FC = () => {
           </p>
         </div>
       </div>
-
-      {/* Real-time health data */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Real-time Health Monitoring</h2>
-          <Link to="/patient/health-data" className="text-sm font-medium text-primary flex items-center">
-            View details <ArrowUpRight size={14} className="ml-1" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <HealthDataCard 
-            title="Heart Rate" 
-            value={realtimeData.heartRate.length > 0 ? realtimeData.heartRate[realtimeData.heartRate.length - 1].value : 0}
-            unit="bpm"
-            data={realtimeData.heartRate}
-            type="heartRate"
-            loading={healthDataLoading}
-          />
-          <HealthDataCard 
-            title="Blood Pressure" 
-            value={realtimeData.bloodPressure.length > 0 ? realtimeData.bloodPressure[realtimeData.bloodPressure.length - 1].value : 0}
-            unit="mmHg"
-            data={realtimeData.bloodPressure}
-            type="bloodPressure"
-            loading={healthDataLoading}
-          />
-          <HealthDataCard 
-            title="Blood Oxygen" 
-            value={realtimeData.bloodOxygen.length > 0 ? realtimeData.bloodOxygen[realtimeData.bloodOxygen.length - 1].value : 0}
-            unit="%"
-            data={realtimeData.bloodOxygen}
-            type="bloodOxygen"
-            loading={healthDataLoading}
-          />
-          <HealthDataCard 
-            title="Temperature" 
-            value={realtimeData.temperature.length > 0 ? realtimeData.temperature[realtimeData.temperature.length - 1].value : 0}
-            unit="°C"
-            data={realtimeData.temperature}
-            type="temperature"
-            loading={healthDataLoading}
-          />
-        </div>
-      </div>
-
       {/* Two column section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming appointments */}

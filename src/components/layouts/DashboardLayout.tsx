@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Menu, X, Bell, User, LogOut, Home, Calendar, FileText, Activity, Users, MessageCircle } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, Home, Calendar, FileText, Users, MessageCircle } from 'lucide-react';
 import { RootState, AppDispatch } from '../../store';
 import { resetAuth } from '../../store/slices/authSlice';
 import NotificationDropdown from '../ui/NotificationDropdown';
@@ -64,8 +64,6 @@ const DashboardLayout: React.FC = () => {
           { path: '/patient/profile', label: 'Profile', icon: <User size={20} /> },
           { path: '/patient/chatbot', label: 'Health Assistant', icon: <MessageCircle size={20} /> },
           { path: '/patient/appointments', label: 'Appointments', icon: <Calendar size={20} /> },
-          { path: '/patient/medical-history', label: 'Medical History', icon: <FileText size={20} /> },
-          { path: '/patient/health-data', label: 'Health Data', icon: <Activity size={20} /> },
         ];
       default:
         return [];

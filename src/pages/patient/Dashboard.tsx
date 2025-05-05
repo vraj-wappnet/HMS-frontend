@@ -14,7 +14,6 @@ const PatientDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { appointments, loading: appointmentsLoading } = useSelector((state: RootState) => state.appointments);
   const { realtimeData, abnormalReadings, loading: healthDataLoading } = useSelector((state: RootState) => state.healthData);
-  const { notifications } = useSelector((state: RootState) => state.notifications);
 
   useEffect(() => {
     if (user?.id) {
@@ -34,9 +33,6 @@ const PatientDashboard: React.FC = () => {
     (appointment) => appointment.status === 'scheduled'
   ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const recentNotifications = notifications
-    .filter((notification) => !notification.read)
-    .slice(0, 3);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -183,41 +179,6 @@ const PatientDashboard: React.FC = () => {
                 >
                   View all appointments
                 </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Recent notifications */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Recent Notifications</h2>
-            {recentNotifications.length === 0 ? (
-              <div className="text-center py-8">
-                <Bell size={24} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-gray-500">No new notifications</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentNotifications.map((notification) => (
-                  <div key={notification.id} className="border-l-4 pl-4 py-2" 
-                    style={{
-                      borderColor: 
-                        notification.type === 'alert' ? 'rgb(var(--color-error))' :
-                        notification.type === 'appointment' ? 'rgb(var(--color-primary))' :
-                        notification.type === 'message' ? 'rgb(var(--color-secondary))' :
-                        'rgb(var(--color-warning))'
-                    }}
-                  >
-                    <div className="flex justify-between">
-                      <h3 className="font-medium text-sm">{notification.title}</h3>
-                      <span className="text-xs text-gray-500">
-                        {format(new Date(notification.timestamp), 'h:mm a')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                  </div>
-                ))}
               </div>
             )}
           </div>

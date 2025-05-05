@@ -1,32 +1,20 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
-// Layout components
 import AuthLayout from "./components/layouts/AuthLayout";
 import DashboardLayout from "./components/layouts/DashboardLayout";
-
-// Auth pages
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
-
-// Dashboard pages - Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
-
-// Dashboard pages - Patient
 import PatientDashboard from "./pages/patient/Dashboard";
-
-// Shared pages
 import VideoConsultation from "./pages/shared/VideoConsultation";
-
-// Redux actions
 import { RootState, AppDispatch } from "./store";
 import { checkAuth } from "./store/slices/authSlice";
-
-// Route guards
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import Dashboard from "./pages/doctor/Dashboard";
+import PatientProfile from "./pages/patient/PatientProfile";
+import HealthAssistant from "./pages/patient/HealthAssistant";
 
 const App = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -179,6 +167,17 @@ const App = () => {
             }
           />
           <Route
+            path="/patient/profile"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                requiredRole="patient"
+              >
+                <PatientProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/patient/appointments"
             element={
               <ProtectedRoute
@@ -218,7 +217,7 @@ const App = () => {
                 isAuthenticated={isAuthenticated}
                 requiredRole="patient"
               >
-                <div>Chatbot (Placeholder)</div>
+                <HealthAssistant />
               </ProtectedRoute>
             }
           />
